@@ -20,8 +20,6 @@ from datetime import datetime, timezone, timedelta
 from src.core.config import get_settings
 from src.core.logging import setup_logging, get_logger
 from src.db.connection import db
-from src.db.queries.executor import QueryExecutor
-from src.db.models import User, Session, EventLog
 
 BASE_URL = "http://localhost:8000"
 
@@ -29,86 +27,104 @@ async def example_database_operations():
     """Demonstrate basic database operations with our new schema."""
     logger = get_logger("example")
     
-    # Create executors for each model
-    user_executor = QueryExecutor(db, User)
-    session_executor = QueryExecutor(db, Session)
-    event_executor = QueryExecutor(db, EventLog)
-    
-    # Example 1: Test database connection
-    await db.execute("SELECT 1")
-    logger.info("database_connection_test_passed")
-    
-    # Example 2: Create a user
-    user_data = {
-        "user_id": "test_user_1",
-        "firebase_data": {"email": "test@example.com"},
-        "body_data": {"height": 180, "weight": 75}
-    }
-    
-    user = await user_executor.create(user_data)
-    logger.info("user_created", user_id=user.user_id)
-    
-    # Example 3: Create a session
-    session_id = "test_session_1"
-    session_data = {
-        "session_id": session_id,
-        "user_id": user_data["user_id"],
-        "ts_start": datetime.now(timezone.utc),
-        "exercises_data": {"workout_type": "strength", "duration": 3600},
-        "device_type": "iphone",
-        "device_os": "ios16",
-        "region": "us-west",
-        "ip": "127.0.0.1",
-        "app_version": "1.0.0"
-    }
-    
-    session = await session_executor.create(session_data)
-    logger.info("session_created", session_id=session.session_id)
-    
-    # Example 4: Log some events
-    events = [
-        {
-            "ts": datetime.now(timezone.utc),
-            "user_id": user_data["user_id"],
+    async with db.transaction() as conn:
+        # Example 1: Test database connection
+        await conn.execute("SELECT 1")
+        logger.info("database_connection_test_passed")
+        
+        # Example 2: Create a user
+        user_data = {
+            "user_id": "test_user_1",
+            "firebase_data": {"email": "test@example.com"},
+            "body_data": {"height": 180, "weight": 75}
+        }
+        
+        await conn.execute("""
+            INSERT INTO users (user_id, firebase_data, body_data)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO UPDATE 
+            SET firebase_data = $2, body_data = $3
+        """, user_data["user_id"], json.dumps(user_data["firebase_data"]), 
+            json.dumps(user_data["body_data"]))
+        
+        logger.info("user_created", user_id=user_data["user_id"])
+        
+        # Example 3: Create a session
+        session_id = "test_session_1"
+        session_data = {
             "session_id": session_id,
-            "event_type": "workout_started",
-            "event_data": {"workout_id": "w1"},
-            "event_source": "mobile_app",
-            "log_level": "info",
-            "app_version": "1.0.0"
-        },
-        {
-            "ts": datetime.now(timezone.utc),
             "user_id": user_data["user_id"],
-            "session_id": session_id,
-            "event_type": "exercise_completed",
-            "event_data": {"exercise_id": "e1", "reps": 10},
-            "event_source": "mobile_app",
-            "log_level": "info",
+            "ts_start": datetime.now(timezone.utc),
+            "exercises_data": {"workout_type": "strength", "duration": 3600},
+            "device_type": "iphone",
+            "device_os": "ios16",
+            "region": "us-west",
+            "ip": "127.0.0.1",
             "app_version": "1.0.0"
         }
-    ]
-    
-    for event_data in events:
-        event = await event_executor.create(event_data)
-        logger.info("event_created", event_id=event.ts)
-    
-    logger.info("events_logged", count=len(events))
-    
-    # Example 5: Query data using the executor
-    # Note: This is a more complex query that might need a custom method in the executor
-    # For now, we'll use a direct query for this example
-    user_sessions = await db.fetch("""
-        SELECT s.session_id, s.ts_start, COUNT(e.event_type) as event_count
-        FROM sessions s
-        LEFT JOIN event_log e ON s.session_id = e.session_id
-        WHERE s.user_id = $1
-        GROUP BY s.session_id, s.ts_start
-        ORDER BY s.ts_start DESC
-    """, user_data["user_id"])
-    
-    logger.info("user_sessions", 
-               sessions=[dict(row) for row in user_sessions])
+        
+        await conn.execute("""
+            INSERT INTO sessions 
+            (session_id, user_id, ts_start, exercises_data, device_type, 
+             device_os, region, ip, app_version)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (session_id) DO NOTHING
+        """, session_data["session_id"], session_data["user_id"], 
+            session_data["ts_start"], json.dumps(session_data["exercises_data"]),
+            session_data["device_type"], session_data["device_os"],
+            session_data["region"], session_data["ip"], 
+            session_data["app_version"])
+            
+        logger.info("session_created", session_id=session_id)
+        
+        # Example 4: Log some events
+        events = [
+            {
+                "ts": datetime.now(timezone.utc),
+                "user_id": user_data["user_id"],
+                "session_id": session_id,
+                "event_type": "workout_started",
+                "event_data": {"workout_id": "w1"},
+                "event_source": "mobile_app",
+                "log_level": "info",
+                "app_version": "1.0.0"
+            },
+            {
+                "ts": datetime.now(timezone.utc),
+                "user_id": user_data["user_id"],
+                "session_id": session_id,
+                "event_type": "exercise_completed",
+                "event_data": {"exercise_id": "e1", "reps": 10},
+                "event_source": "mobile_app",
+                "log_level": "info",
+                "app_version": "1.0.0"
+            }
+        ]
+        
+        for event in events:
+            await conn.execute("""
+                INSERT INTO event_log 
+                (ts, user_id, session_id, event_type, event_data, 
+                 event_source, log_level, app_version)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            """, event["ts"], event["user_id"], event["session_id"],
+                event["event_type"], json.dumps(event["event_data"]),
+                event["event_source"], event["log_level"], event["app_version"])
+        
+        logger.info("events_logged", count=len(events))
+        
+        # Example 5: Query data
+        user_sessions = await conn.fetch("""
+            SELECT s.session_id, s.ts_start, COUNT(e.event_type) as event_count
+            FROM sessions s
+            LEFT JOIN event_log e ON s.session_id = e.session_id
+            WHERE s.user_id = $1
+            GROUP BY s.session_id, s.ts_start
+            ORDER BY s.ts_start DESC
+        """, user_data["user_id"])
+        
+        logger.info("user_sessions", 
+                   sessions=[dict(row) for row in user_sessions])
 
 def example_api_usage():
     """Demonstrate API usage with our endpoints."""
