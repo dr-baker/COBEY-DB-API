@@ -5,6 +5,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS event_log (
+    event_id SERIAL PRIMARY KEY,
     ts TIMESTAMP WITH TIME ZONE NOT NULL,
     user_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
@@ -12,10 +13,12 @@ CREATE TABLE IF NOT EXISTS event_log (
     event_data JSONB NOT NULL DEFAULT '{}',
     event_source TEXT NOT NULL,
     log_level TEXT NOT NULL,
-    app_version TEXT
+    app_version TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Add foreign key constraint if it doesn't exist
+-- Add foreign key constraints if they don't exist
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -25,11 +28,7 @@ BEGIN
         ADD CONSTRAINT event_log_user_id_fkey
         FOREIGN KEY (user_id) REFERENCES users(user_id);
     END IF;
-END$$;
-
--- Add foreign key for session_id if it doesn't exist
-DO $$
-BEGIN
+    
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'event_log_session_id_fkey'
     ) THEN
@@ -40,10 +39,11 @@ BEGIN
 END$$;
 
 -- Add indexes for common queries
+CREATE INDEX IF NOT EXISTS event_log_ts_idx ON event_log(ts);
 CREATE INDEX IF NOT EXISTS event_log_user_id_idx ON event_log(user_id);
 CREATE INDEX IF NOT EXISTS event_log_session_id_idx ON event_log(session_id);
-CREATE INDEX IF NOT EXISTS event_log_ts_idx ON event_log(ts);
-CREATE INDEX IF NOT EXISTS event_log_type_idx ON event_log(event_type);
-CREATE INDEX IF NOT EXISTS event_log_source_idx ON event_log(event_source);
+CREATE INDEX IF NOT EXISTS event_log_event_type_idx ON event_log(event_type);
+CREATE INDEX IF NOT EXISTS event_log_event_source_idx ON event_log(event_source);
+CREATE INDEX IF NOT EXISTS event_log_created_at_idx ON event_log(created_at); -- Index for created_at
 
 COMMIT; 

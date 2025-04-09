@@ -21,6 +21,11 @@ from ...core.logging import get_logger
 logger = get_logger(__name__)
 MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "versions")
 
+async def clear_migrations_table(conn: asyncpg.Connection) -> None:
+    """Clear all records from the migrations table."""
+    await conn.execute("DROP TABLE IF EXISTS migrations")
+    logger.info("Migrations table cleared")
+
 async def get_applied_migrations(conn: asyncpg.Connection) -> List[str]:
     """Get list of applied migrations."""
     # Create migrations tracking table if it doesn't exist
@@ -31,48 +36,63 @@ async def get_applied_migrations(conn: asyncpg.Connection) -> List[str]:
             applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         )
     """)
+    logger.info("Migrations table verified/created")
+    
     # Return sorted list of already applied migrations
-    return [
+    migrations = [
         row['name'] 
         for row in await conn.fetch("SELECT name FROM migrations ORDER BY id")
     ]
+    logger.info(f"Found {len(migrations)} applied migrations")
+    return migrations
 
-async def apply_migrations() -> None:
+async def apply_migrations(clear_existing: bool = False) -> None:
     """Apply pending migrations."""
-    # Get directory containing migration files
-    
     try:
         # Establish database connection
         await db.connect()
         async with db.pool.acquire() as conn:
+            if clear_existing:
+                await clear_migrations_table(conn)
+            
             # Get list of already applied migrations
             applied = await get_applied_migrations(conn)
+            logger.info(f"Found {len(applied)} previously applied migrations")
             
             # Get all .sql migration files sorted by name
             migration_files = sorted([
                 f for f in os.listdir(MIGRATIONS_DIR)
                 if f.endswith('.sql')
             ])
+            logger.info(f"Found {len(migration_files)} total migration files")
             
-            # Apply each pending migration in a transaction
-            for file_name in migration_files:
-                if file_name not in applied:
-                    logger.info("Applying migration", migration=file_name)
-                    
-                    # Read migration SQL from file
-                    path = os.path.join(MIGRATIONS_DIR, file_name)
-                    with open(path) as f:
-                        sql = f.read()
-                        
-                    # Execute migration and record it as applied
-                    async with conn.transaction():
-                        await conn.execute(sql)
-                        await conn.execute(
-                            "INSERT INTO migrations (name) VALUES ($1)",
-                            file_name
-                        )
-                    
-                    logger.info("Migration applied", migration=file_name)
+            # Apply each pending migration
+            pending_migrations = [f for f in migration_files if f not in applied]
+            if not pending_migrations:
+                logger.info("No pending migrations to apply")
+                return
+                
+            logger.info(f"Found {len(pending_migrations)} pending migrations to apply")
+            for file_name in pending_migrations:
+                logger.info(f"Starting migration: {file_name}")
+                
+                # Read migration SQL from file
+                path = os.path.join(MIGRATIONS_DIR, file_name)
+                with open(path) as f:
+                    sql = f.read()
+                
+                try:
+                    # Execute migration
+                    await conn.execute(sql)
+                    # Record it as applied
+                    await conn.execute(
+                        "INSERT INTO migrations (name) VALUES ($1)",
+                        file_name
+                    )
+                    logger.info(f"Successfully applied migration: {file_name}")
+                except Exception as e:
+                    logger.error(f"Failed to apply migration {file_name}: {str(e)}")
+                    raise
     
     finally:
         # Always close database connection

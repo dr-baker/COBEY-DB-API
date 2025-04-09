@@ -197,20 +197,40 @@ async def generate_models(pool: asyncpg.Pool, schema: str = "public") -> Dict[st
         
         for column in table.columns:
             # Map PostgreSQL type to Python type
-            python_type, is_optional = map_postgres_type_to_python(column.data_type)
+            python_type, is_optional_based_on_type = map_postgres_type_to_python(column.data_type)
             
-            # Create field with appropriate type and constraints
-            field_type = Optional[python_type] if is_optional else python_type
+            # Determine if the field should be optional in the Pydantic model
+            is_optional = column.is_nullable or is_optional_based_on_type
+            
+            # Always make created_at/updated_at optional (db handles default)
+            if column.name in ["created_at", "updated_at"]:
+                field_default = None
+                effective_type = Optional[python_type]
+            # Make app_version optional specifically for event_log table
+            elif table.name == "event_log" and column.name == "app_version":
+                field_default = None
+                effective_type = Optional[python_type]
+            # Original logic for other fields
+            else:
+                field_default = None if is_optional else ...
+                effective_type = Optional[python_type] if is_optional else python_type
+            
+            # Create field with appropriate type and default
             field = Field(
-                default=None if is_optional else ...,
+                default=field_default,
                 description=f"Column: {column.name}, Type: {column.data_type}"
             )
             
-            fields[column.name] = (field_type, field)
+            fields[column.name] = (effective_type, field)
         
         # Create the model class
-        model_name = inflect.engine().singular_noun(table.name) or table.name
-        model_name = model_name.title().replace('_', '')
+        # Use inflect to try and singularize the table name for the model name
+        p = inflect.engine()
+        model_name_singular = p.singular_noun(table.name)
+        if model_name_singular: # Check if singularization was successful
+            model_name = model_name_singular.replace('_', ' ').title().replace(' ', '')
+        else: # Fallback to table name if singularization fails
+            model_name = table.name.replace('_', ' ').title().replace(' ', '')
         
         model = type(
             model_name,

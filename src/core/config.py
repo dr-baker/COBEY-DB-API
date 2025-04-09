@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # API Settings
     API_TITLE: str = "Backend API"
     API_VERSION: str = "0.1.0"
+    APP_VERSION: str = "1.0.0"  # Added for compatibility with event logging
     DEBUG: bool = False
     
     # Database Settings
@@ -27,6 +28,9 @@ class Settings(BaseSettings):
     # Security Settings
     API_RATE_LIMIT: int = 100  # requests per window
     API_RATE_WINDOW: int = 60  # seconds
+    
+    # Logging
+    LOG_LEVEL: str = "DEBUG"  # Default to DEBUG level
     
     class Config:
         env_file = ".env"

@@ -60,7 +60,9 @@ class DynamicModels:
             
         try:
             logger.info("Generating dynamic models from database schema")
-            self._models = await generate_models(db)
+            if not db.pool:
+                raise RuntimeError("Database not connected. Call db.connect() first.")
+            self._models = await generate_models(db.pool)
             self._initialized = True
             logger.info(f"Successfully loaded {len(self._models)} models: {', '.join(self._models.keys())}")
         except Exception as e:
@@ -102,7 +104,7 @@ class DynamicModels:
     
     def get_all_models(self) -> Dict[str, Type[BaseModel]]:
         """
-        Get all generated Pydantic models.
+        Get all generated models.
         
         Returns:
             Dictionary mapping table names to Pydantic model classes

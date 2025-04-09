@@ -34,6 +34,10 @@ class DatabaseConnection:
                 remote_bind_address=(self.settings.DB_HOST, self.settings.DB_PORT)
             )
             self.tunnel.start()
+            logger.info("SSH Tunnel Created", 
+                       local_port=self.tunnel.local_bind_port,
+                       remote_host=self.settings.DB_HOST,
+                       remote_port=self.settings.DB_PORT)
             
             # Create a pool of database connections through the SSH tunnel
             # The pool maintains a minimum and maximum number of connections
