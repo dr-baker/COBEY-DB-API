@@ -27,28 +27,28 @@ class SQLBuilder:
         self.query_parts.append(f"FROM {table}")
         return self
     
-    def WHERE(self, condition: str, *values: Any) -> 'SQLBuilder':
-        """Add WHERE clause with safe parameter binding."""
-        placeholders = [self._add_param(v) for v in values]
-        self.query_parts.append(
-            f"WHERE {condition.format(*placeholders)}"
-        )
+    def WHERE(self, condition: str) -> 'SQLBuilder':
+        """Add WHERE clause with safe parameter binding.
+        
+        The condition should already include parameter placeholders.
+        """
+        self.query_parts.append(f"WHERE {condition}")
         return self
     
-    def AND(self, condition: str, *values: Any) -> 'SQLBuilder':
-        """Add AND clause."""
-        placeholders = [self._add_param(v) for v in values]
-        self.query_parts.append(
-            f"AND {condition.format(*placeholders)}"
-        )
+    def AND(self, condition: str) -> 'SQLBuilder':
+        """Add AND clause.
+        
+        The condition should already include parameter placeholders.
+        """
+        self.query_parts.append(f"AND {condition}")
         return self
     
-    def OR(self, condition: str, *values: Any) -> 'SQLBuilder':
-        """Add OR clause."""
-        placeholders = [self._add_param(v) for v in values]
-        self.query_parts.append(
-            f"OR {condition.format(*placeholders)}"
-        )
+    def OR(self, condition: str) -> 'SQLBuilder':
+        """Add OR clause.
+        
+        The condition should already include parameter placeholders.
+        """
+        self.query_parts.append(f"OR {condition}")
         return self
     
     def ORDER_BY(self, *columns: str) -> 'SQLBuilder':
@@ -75,6 +75,21 @@ class SQLBuilder:
         self.query_parts.append(
             f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         )
+        return self
+    
+    def UPDATE(self, table: str, **values: Any) -> 'SQLBuilder':
+        """Add UPDATE clause."""
+        self.query_parts.append(f"UPDATE {table} SET")
+        set_parts = []
+        for key, value in values.items():
+            set_parts.append(f"{key} = {self._add_param(value)}")
+        self.query_parts.append(", ".join(set_parts))
+        return self
+    
+    def SET(self, **values: Any) -> 'SQLBuilder':
+        """Add SET clause for UPDATE statements."""
+        set_parts = [f"{key} = {self._add_param(value)}" for key, value in values.items()]
+        self.query_parts.append(f"SET {', '.join(set_parts)}")
         return self
     
     def RETURNING(self, *columns: str) -> 'SQLBuilder':

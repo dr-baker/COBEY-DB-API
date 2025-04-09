@@ -4,7 +4,6 @@ from .api.routes import health, crud_routes
 from .core import config
 from .core.logging import setup_logging, get_logger
 from .db.connection import db
-from .models.dynamic import dynamic_models
 
 # Setup logging
 setup_logging()
@@ -26,12 +25,10 @@ app.include_router(crud_routes.event_log_router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database connection and load dynamic models on startup."""
+    """Initialize database connection on startup."""
     logger.info("Connecting to database...")
     await db.connect()
-    logger.info("Database connected. Loading dynamic models...")
-    await dynamic_models.load_models()
-    logger.info("Dynamic models loaded.")
+    logger.info("Database connected.")
 
 @app.on_event("shutdown")
 async def shutdown_event():

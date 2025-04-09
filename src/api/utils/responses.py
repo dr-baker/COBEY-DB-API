@@ -2,9 +2,47 @@
 
 This module provides utility functions for creating standardized API responses.
 """
-from typing import Any, Dict, Optional, Union
-from fastapi.responses import JSONResponse
+from typing import Any, Dict, List, Optional, Union
 from fastapi import status
+from fastapi.responses import JSONResponse
+import json
+from datetime import datetime
+from pydantic import BaseModel
+
+def serialize_for_json(obj: Any) -> Any:
+    """
+    Serialize objects for JSON response.
+    
+    This function handles:
+    - datetime objects
+    - Pydantic models (using JSON mode)
+    - dictionaries and lists
+    - other basic types
+    
+    Args:
+        obj: The object to serialize
+        
+    Returns:
+        JSON serializable version of the object
+    """
+    if isinstance(obj, datetime):
+        # Should ideally be handled by model_dump(mode='json') or direct serialization
+        return obj.isoformat()
+    elif isinstance(obj, BaseModel):
+        # Use mode='json' for built-in JSON-compatible serialization (e.g., datetime -> str)
+        return obj.model_dump(mode='json')
+    elif isinstance(obj, dict):
+        # Recursively serialize dictionary values
+        return {k: serialize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        # Recursively serialize list items
+        return [serialize_for_json(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        # Fallback for other objects, might be risky
+        return serialize_for_json(obj.__dict__)
+    else:
+        # Basic types
+        return obj
 
 def success_response(
     data: Any = None,
@@ -14,8 +52,8 @@ def success_response(
     """Create a standardized success response.
     
     Args:
-        data: The data to include in the response
-        message: A success message
+        data: Response data
+        message: Success message
         status_code: HTTP status code
         
     Returns:
@@ -27,7 +65,7 @@ def success_response(
     }
     
     if data is not None:
-        response_data["data"] = data
+        response_data["data"] = serialize_for_json(data)
         
     return JSONResponse(
         status_code=status_code,
@@ -55,7 +93,7 @@ def error_response(
     }
     
     if errors is not None:
-        response_data["errors"] = errors
+        response_data["errors"] = serialize_for_json(errors)
         
     return JSONResponse(
         status_code=status_code,
@@ -63,7 +101,7 @@ def error_response(
     )
 
 def paginated_response(
-    items: list,
+    items: List[Any],
     total: int,
     page: int,
     size: int,
@@ -72,30 +110,24 @@ def paginated_response(
     """Create a standardized paginated response.
     
     Args:
-        items: The list of items for the current page
-        total: Total number of items across all pages
+        items: List of items for the current page
+        total: Total number of items
         page: Current page number
-        size: Items per page
-        message: A success message
+        size: Page size
+        message: Success message
         
     Returns:
         A JSONResponse with the standardized paginated format
     """
-    total_pages = (total + size - 1) // size if size > 0 else 0
-    
     response_data = {
         "success": True,
         "message": message,
         "data": {
-            "items": items,
-            "pagination": {
-                "total": total,
-                "page": page,
-                "size": size,
-                "total_pages": total_pages,
-                "has_next": page < total_pages,
-                "has_prev": page > 1
-            }
+            "items": serialize_for_json(items),
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": (total + size - 1) // size if size > 0 else 0
         }
     }
     

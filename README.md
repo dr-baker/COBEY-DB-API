@@ -4,12 +4,12 @@ A FastAPI-based backend service that provides a RESTful API for managing user da
 
 ## Features
 
-- Dynamic Pydantic model generation from PostgreSQL schema
+- Explicit Pydantic models for request/response validation 
 - CRUD operations for all database tables
-- Request/response validation using Pydantic models
 - Pagination and filtering support
 - Comprehensive API documentation
 - Logging and error handling
+- Well-structured code with clean separation of concerns
 
 ## Installation
 
@@ -270,8 +270,8 @@ The Event Log API provides endpoints for managing event logs.
      - `session_id` (string, optional): Filter by session ID
      - `event_type` (string, optional): Filter by event type
      - `event_source` (string, optional): Filter by event source
-     - `start_time` (datetime, optional): Filter by start time
-     - `end_time` (datetime, optional): Filter by end time
+     - `ts_gte` (datetime, optional): Filter by timestamp greater than or equal to
+     - `ts_lte` (datetime, optional): Filter by timestamp less than or equal to
      - `page` (int, default=1): Page number
      - `size` (int, default=10, max=100): Items per page
    - **Response**: List of event log objects
@@ -349,10 +349,8 @@ backendapi/
 │   ├── api/
 │   │   ├── dependencies.py
 │   │   └── routes/
-│   │       ├── users.py
-│   │       ├── recordings.py
-│   │       ├── algos.py
-│   │       └── event_log.py
+│   │       ├── health.py
+│   │       └── crud_routes.py
 │   ├── core/
 │   │   ├── config.py
 │   │   └── logging.py
@@ -363,15 +361,33 @@ backendapi/
 │   │       ├── builder.py
 │   │       └── executor.py
 │   └── models/
-│       └── dynamic.py
-├── alembic/
-│   └── versions/
+│       ├── users.py
+│       ├── recordings.py
+│       ├── sessions.py
+│       ├── algos.py
+│       └── event_log.py
+├── scripts/
+│   ├── migrate.py
+│   ├── reset_and_migrate.py
+│   └── generate_models.py
+├── examples/
+│   └── basic_usage.py
 ├── tests/
 ├── .env.example
 ├── alembic.ini
 ├── main.py
 └── requirements.txt
 ```
+
+### Model Generation
+
+The project uses explicit Pydantic models to represent database tables. If your database schema changes, you can regenerate the models using:
+
+```bash
+python -m scripts.generate_models
+```
+
+This will introspect your database schema and create appropriate Pydantic models in the `src/models` directory.
 
 ### Running Tests
 
@@ -394,6 +410,29 @@ alembic upgrade head
 Rollback migrations:
 ```bash
 alembic downgrade -1
+```
+
+### Working with the CRUD Router
+
+The API uses a standardized CRUD router factory that generates consistent endpoints for each table. To add a new table to the API:
+
+1. Generate models for your table with `python -m scripts.generate_models`
+2. Update the MODEL_MAP in `src/api/dependencies.py` to include your new model
+3. Add a router in `src/api/routes/crud_routes.py`:
+
+```python
+your_table_router = create_crud_router(
+    table_name="your_table_name",
+    prefix="/your-endpoint",
+    tags=["your-tag"],
+    auto_timestamps=True
+)
+```
+
+4. Register the new router in `src/main.py`:
+
+```python
+app.include_router(crud_routes.your_table_router)
 ```
 
 ## Contributing
