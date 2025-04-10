@@ -1,0 +1,3288 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Backend API",
+    "description": "\n    FastAPI backend service for PostgreSQL database access.\n    ",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Check API Health",
+        "description": "Check the health status of the API and its dependencies.\n    \n    This endpoint verifies:\n    - API service status\n    - Database connectivity\n    - Current API version\n    \n    Returns a detailed health status report.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "healthy",
+                  "version": "0.1.0",
+                  "database": {
+                    "status": "connected",
+                    "pool_size": 10
+                  },
+                  "timestamp": "2024-04-10T12:00:00Z"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API is unhealthy",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "unhealthy",
+                  "version": "0.1.0",
+                  "database": {
+                    "status": "disconnected",
+                    "error": "Connection refused"
+                  },
+                  "timestamp": "2024-04-10T12:00:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{item_id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get users by ID",
+        "description": "Retrieve a specific users entry by its unique identifier.\n        \n        This endpoint returns a single users record with all its fields.\n        If the record is not found, a 404 error is returned.",
+        "operationId": "get_item_users__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "users found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response Get Item Users  Item Id  Get"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "users not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "users not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Replace users",
+        "description": "Completely replace an existing users entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Replaces all fields of the existing record\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a complete replacement, not a partial update.",
+        "operationId": "replace_item_users__item_id__put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "users replaced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response Replace Item Users  Item Id  Put"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:02:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "users not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "users not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update users",
+        "description": "Update an existing users entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Updates only the provided fields\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a partial update, only the provided fields will be changed.",
+        "operationId": "update_item_users__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "users updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response Update Item Users  Item Id  Patch"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:03:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "users not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "users not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Delete users",
+        "description": "Delete a users entry by its unique identifier.\n        \n        This endpoint:\n        - Deletes the record from the database\n        - Returns 204 No Content on success\n        - Returns 404 if the record is not found",
+        "operationId": "delete_item_users__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "users deleted successfully"
+          },
+          "404": {
+            "description": "users not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "users not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/users/": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "List users",
+        "description": "Retrieve a paginated list of users with optional filtering.\n        \n        This endpoint supports:\n        - Pagination (page and size parameters)\n        - Filtering by various fields\n        - Sorting (if implemented)\n        \n        The response includes a list of users records and pagination metadata.",
+        "operationId": "list_items_users__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 10,
+              "title": "Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by user ID",
+              "title": "User Id"
+            },
+            "description": "Filter by user ID"
+          },
+          {
+            "name": "recording_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recording type",
+              "title": "Recording Type"
+            },
+            "description": "Filter by recording type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__1"
+                  },
+                  "title": "Response List Items Users  Get"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "123",
+                        "name": "Example 1",
+                        "created_at": "2024-04-10T12:00:00Z"
+                      },
+                      {
+                        "id": "124",
+                        "name": "Example 2",
+                        "created_at": "2024-04-10T12:01:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create users",
+        "description": "Create a new users entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Adds automatic timestamps (if enabled)\n        - Adds any extra fields (if specified)\n        - Creates the record in the database\n        \n        Returns the created record with all fields.",
+        "operationId": "create_item_users__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "users created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response Create Item Users  Post"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "New Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "field required",
+                      "type": "value_error.missing"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/recordings/{item_id}": {
+      "get": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Get recordings by ID",
+        "description": "Retrieve a specific recordings entry by its unique identifier.\n        \n        This endpoint returns a single recordings record with all its fields.\n        If the record is not found, a 404 error is returned.",
+        "operationId": "get_item_recordings__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "recordings found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Recording"
+                  },
+                  "title": "Response Get Item Recordings  Item Id  Get"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "recordings not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "recordings not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Replace recordings",
+        "description": "Completely replace an existing recordings entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Replaces all fields of the existing record\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a complete replacement, not a partial update.",
+        "operationId": "replace_item_recordings__item_id__put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "recordings replaced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Recording"
+                  },
+                  "title": "Response Replace Item Recordings  Item Id  Put"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:02:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "recordings not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "recordings not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Update recordings",
+        "description": "Update an existing recordings entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Updates only the provided fields\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a partial update, only the provided fields will be changed.",
+        "operationId": "update_item_recordings__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "recordings updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Recording"
+                  },
+                  "title": "Response Update Item Recordings  Item Id  Patch"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:03:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "recordings not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "recordings not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Delete recordings",
+        "description": "Delete a recordings entry by its unique identifier.\n        \n        This endpoint:\n        - Deletes the record from the database\n        - Returns 204 No Content on success\n        - Returns 404 if the record is not found",
+        "operationId": "delete_item_recordings__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "recordings deleted successfully"
+          },
+          "404": {
+            "description": "recordings not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "recordings not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/recordings/": {
+      "get": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "List recordings",
+        "description": "Retrieve a paginated list of recordings with optional filtering.\n        \n        This endpoint supports:\n        - Pagination (page and size parameters)\n        - Filtering by various fields\n        - Sorting (if implemented)\n        \n        The response includes a list of recordings records and pagination metadata.",
+        "operationId": "list_items_recordings__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 10,
+              "title": "Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by user ID",
+              "title": "User Id"
+            },
+            "description": "Filter by user ID"
+          },
+          {
+            "name": "recording_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recording type",
+              "title": "Recording Type"
+            },
+            "description": "Filter by recording type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__2"
+                  },
+                  "title": "Response List Items Recordings  Get"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "123",
+                        "name": "Example 1",
+                        "created_at": "2024-04-10T12:00:00Z"
+                      },
+                      {
+                        "id": "124",
+                        "name": "Example 2",
+                        "created_at": "2024-04-10T12:01:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "recordings"
+        ],
+        "summary": "Create recordings",
+        "description": "Create a new recordings entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Adds automatic timestamps (if enabled)\n        - Adds any extra fields (if specified)\n        - Creates the record in the database\n        \n        Returns the created record with all fields.",
+        "operationId": "create_item_recordings__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "recordings created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Recording"
+                  },
+                  "title": "Response Create Item Recordings  Post"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "New Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "field required",
+                      "type": "value_error.missing"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/sessions/{item_id}": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get sessions by ID",
+        "description": "Retrieve a specific sessions entry by its unique identifier.\n        \n        This endpoint returns a single sessions record with all its fields.\n        If the record is not found, a 404 error is returned.",
+        "operationId": "get_item_sessions__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "sessions found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "title": "Response Get Item Sessions  Item Id  Get"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "sessions not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "sessions not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Replace sessions",
+        "description": "Completely replace an existing sessions entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Replaces all fields of the existing record\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a complete replacement, not a partial update.",
+        "operationId": "replace_item_sessions__item_id__put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "sessions replaced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "title": "Response Replace Item Sessions  Item Id  Put"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:02:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "sessions not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "sessions not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Update sessions",
+        "description": "Update an existing sessions entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Updates only the provided fields\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a partial update, only the provided fields will be changed.",
+        "operationId": "update_item_sessions__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "sessions updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "title": "Response Update Item Sessions  Item Id  Patch"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:03:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "sessions not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "sessions not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Delete sessions",
+        "description": "Delete a sessions entry by its unique identifier.\n        \n        This endpoint:\n        - Deletes the record from the database\n        - Returns 204 No Content on success\n        - Returns 404 if the record is not found",
+        "operationId": "delete_item_sessions__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "sessions deleted successfully"
+          },
+          "404": {
+            "description": "sessions not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "sessions not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/sessions/": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "List sessions",
+        "description": "Retrieve a paginated list of sessions with optional filtering.\n        \n        This endpoint supports:\n        - Pagination (page and size parameters)\n        - Filtering by various fields\n        - Sorting (if implemented)\n        \n        The response includes a list of sessions records and pagination metadata.",
+        "operationId": "list_items_sessions__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 10,
+              "title": "Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by user ID",
+              "title": "User Id"
+            },
+            "description": "Filter by user ID"
+          },
+          {
+            "name": "recording_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recording type",
+              "title": "Recording Type"
+            },
+            "description": "Filter by recording type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__3"
+                  },
+                  "title": "Response List Items Sessions  Get"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "123",
+                        "name": "Example 1",
+                        "created_at": "2024-04-10T12:00:00Z"
+                      },
+                      {
+                        "id": "124",
+                        "name": "Example 2",
+                        "created_at": "2024-04-10T12:01:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Create sessions",
+        "description": "Create a new sessions entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Adds automatic timestamps (if enabled)\n        - Adds any extra fields (if specified)\n        - Creates the record in the database\n        \n        Returns the created record with all fields.",
+        "operationId": "create_item_sessions__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "sessions created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  "title": "Response Create Item Sessions  Post"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "New Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "field required",
+                      "type": "value_error.missing"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/algos/{item_id}": {
+      "get": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "Get algos by ID",
+        "description": "Retrieve a specific algos entry by its unique identifier.\n        \n        This endpoint returns a single algos record with all its fields.\n        If the record is not found, a 404 error is returned.",
+        "operationId": "get_item_algos__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "algos found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Algo"
+                  },
+                  "title": "Response Get Item Algos  Item Id  Get"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "algos not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "algos not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "Replace algos",
+        "description": "Completely replace an existing algos entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Replaces all fields of the existing record\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a complete replacement, not a partial update.",
+        "operationId": "replace_item_algos__item_id__put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlgoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "algos replaced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Algo"
+                  },
+                  "title": "Response Replace Item Algos  Item Id  Put"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:02:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "algos not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "algos not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "Update algos",
+        "description": "Update an existing algos entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Updates only the provided fields\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a partial update, only the provided fields will be changed.",
+        "operationId": "update_item_algos__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlgoUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "algos updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Algo"
+                  },
+                  "title": "Response Update Item Algos  Item Id  Patch"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:03:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "algos not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "algos not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "Delete algos",
+        "description": "Delete a algos entry by its unique identifier.\n        \n        This endpoint:\n        - Deletes the record from the database\n        - Returns 204 No Content on success\n        - Returns 404 if the record is not found",
+        "operationId": "delete_item_algos__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "algos deleted successfully"
+          },
+          "404": {
+            "description": "algos not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "algos not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/algos/": {
+      "get": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "List algos",
+        "description": "Retrieve a paginated list of algos with optional filtering.\n        \n        This endpoint supports:\n        - Pagination (page and size parameters)\n        - Filtering by various fields\n        - Sorting (if implemented)\n        \n        The response includes a list of algos records and pagination metadata.",
+        "operationId": "list_items_algos__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 10,
+              "title": "Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by user ID",
+              "title": "User Id"
+            },
+            "description": "Filter by user ID"
+          },
+          {
+            "name": "recording_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recording type",
+              "title": "Recording Type"
+            },
+            "description": "Filter by recording type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__4"
+                  },
+                  "title": "Response List Items Algos  Get"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "123",
+                        "name": "Example 1",
+                        "created_at": "2024-04-10T12:00:00Z"
+                      },
+                      {
+                        "id": "124",
+                        "name": "Example 2",
+                        "created_at": "2024-04-10T12:01:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "algos"
+        ],
+        "summary": "Create algos",
+        "description": "Create a new algos entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Adds automatic timestamps (if enabled)\n        - Adds any extra fields (if specified)\n        - Creates the record in the database\n        \n        Returns the created record with all fields.",
+        "operationId": "create_item_algos__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlgoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "algos created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Algo"
+                  },
+                  "title": "Response Create Item Algos  Post"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "New Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "field required",
+                      "type": "value_error.missing"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/events/{item_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get event_log by ID",
+        "description": "Retrieve a specific event_log entry by its unique identifier.\n        \n        This endpoint returns a single event_log record with all its fields.\n        If the record is not found, a 404 error is returned.",
+        "operationId": "get_item_events__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "event_log found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EventLog"
+                  },
+                  "title": "Response Get Item Events  Item Id  Get"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "event_log not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "event_log not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Replace event_log",
+        "description": "Completely replace an existing event_log entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Replaces all fields of the existing record\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a complete replacement, not a partial update.",
+        "operationId": "replace_item_events__item_id__put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventLogCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "event_log replaced successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EventLog"
+                  },
+                  "title": "Response Replace Item Events  Item Id  Put"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:02:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "event_log not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "event_log not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Update event_log",
+        "description": "Update an existing event_log entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Updates only the provided fields\n        - Updates the timestamp (if enabled)\n        - Returns the updated record\n        \n        Note: This is a partial update, only the provided fields will be changed.",
+        "operationId": "update_item_events__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventLogUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "event_log updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EventLog"
+                  },
+                  "title": "Response Update Item Events  Item Id  Patch"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "Updated Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:03:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "event_log not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "event_log not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Delete event_log",
+        "description": "Delete a event_log entry by its unique identifier.\n        \n        This endpoint:\n        - Deletes the record from the database\n        - Returns 204 No Content on success\n        - Returns 404 if the record is not found",
+        "operationId": "delete_item_events__item_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "event_log deleted successfully"
+          },
+          "404": {
+            "description": "event_log not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "event_log not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/events/": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List event_log",
+        "description": "Retrieve a paginated list of event_log with optional filtering.\n        \n        This endpoint supports:\n        - Pagination (page and size parameters)\n        - Filtering by various fields\n        - Sorting (if implemented)\n        \n        The response includes a list of event_log records and pagination metadata.",
+        "operationId": "list_items_events__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 10,
+              "title": "Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by user ID",
+              "title": "User Id"
+            },
+            "description": "Filter by user ID"
+          },
+          {
+            "name": "recording_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by recording type",
+              "title": "Recording Type"
+            },
+            "description": "Filter by recording type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__5"
+                  },
+                  "title": "Response List Items Events  Get"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "123",
+                        "name": "Example 1",
+                        "created_at": "2024-04-10T12:00:00Z"
+                      },
+                      {
+                        "id": "124",
+                        "name": "Example 2",
+                        "created_at": "2024-04-10T12:01:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Create event_log",
+        "description": "Create a new event_log entry with the provided data.\n        \n        This endpoint:\n        - Validates the input data\n        - Adds automatic timestamps (if enabled)\n        - Adds any extra fields (if specified)\n        - Creates the record in the database\n        \n        Returns the created record with all fields.",
+        "operationId": "create_item_events__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventLogCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "event_log created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EventLog"
+                  },
+                  "title": "Response Create Item Events  Post"
+                },
+                "example": {
+                  "data": {
+                    "id": "123",
+                    "name": "New Example",
+                    "created_at": "2024-04-10T12:00:00Z",
+                    "updated_at": "2024-04-10T12:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "body",
+                        "name"
+                      ],
+                      "msg": "field required",
+                      "type": "value_error.missing"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Algo": {
+        "properties": {
+          "algo_id": {
+            "type": "string",
+            "title": "Algo Id",
+            "description": "text"
+          },
+          "recording_type": {
+            "type": "string",
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "text"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "text"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "timestamp with time zone"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "timestamp with time zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "algo_id",
+          "recording_type",
+          "location",
+          "version"
+        ],
+        "title": "Algo",
+        "description": "Pydantic model for algos table."
+      },
+      "AlgoCreate": {
+        "properties": {
+          "algo_id": {
+            "type": "string",
+            "title": "Algo Id",
+            "description": "text"
+          },
+          "recording_type": {
+            "type": "string",
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location",
+            "description": "text"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "algo_id",
+          "recording_type",
+          "location",
+          "version"
+        ],
+        "title": "AlgoCreate",
+        "description": "Schema for creating a new algos record."
+      },
+      "AlgoUpdate": {
+        "properties": {
+          "algo_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Algo Id",
+            "description": "text"
+          },
+          "recording_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "text"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "title": "AlgoUpdate",
+        "description": "Schema for updating an existing algos record."
+      },
+      "EventLog": {
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id",
+            "description": "integer"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "text"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type",
+            "description": "text"
+          },
+          "event_data": {
+            "type": "object",
+            "title": "Event Data",
+            "description": "jsonb"
+          },
+          "event_source": {
+            "type": "string",
+            "title": "Event Source",
+            "description": "text"
+          },
+          "log_level": {
+            "type": "string",
+            "title": "Log Level",
+            "description": "text"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version",
+            "description": "text"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "timestamp with time zone"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "timestamp with time zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "ts",
+          "user_id",
+          "session_id",
+          "event_type",
+          "event_data",
+          "event_source",
+          "log_level"
+        ],
+        "title": "EventLog",
+        "description": "Pydantic model for event_log table."
+      },
+      "EventLogCreate": {
+        "properties": {
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id",
+            "description": "integer - auto-generated if not provided"
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "text"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type",
+            "description": "text"
+          },
+          "event_data": {
+            "type": "object",
+            "title": "Event Data",
+            "description": "jsonb"
+          },
+          "event_source": {
+            "type": "string",
+            "title": "Event Source",
+            "description": "text"
+          },
+          "log_level": {
+            "type": "string",
+            "title": "Log Level",
+            "description": "text"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ts",
+          "user_id",
+          "session_id",
+          "event_type",
+          "event_data",
+          "event_source",
+          "log_level"
+        ],
+        "title": "EventLogCreate",
+        "description": "Schema for creating a new event_log record."
+      },
+      "EventLogUpdate": {
+        "properties": {
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id",
+            "description": "integer"
+          },
+          "ts": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ts",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "text"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "text"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type",
+            "description": "text"
+          },
+          "event_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Data",
+            "description": "jsonb"
+          },
+          "event_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Source",
+            "description": "text"
+          },
+          "log_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Level",
+            "description": "text"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "title": "EventLogUpdate",
+        "description": "Schema for updating an existing event_log record."
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "database": {
+            "type": "object",
+            "title": "Database"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "database",
+          "timestamp"
+        ],
+        "title": "HealthResponse",
+        "description": "Health check response model."
+      },
+      "Recording": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id",
+            "description": "text"
+          },
+          "recording_link": {
+            "type": "string",
+            "title": "Recording Link",
+            "description": "text"
+          },
+          "recording_type": {
+            "type": "string",
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "timestamp with time zone"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "timestamp with time zone"
+          },
+          "created_session_id": {
+            "type": "string",
+            "title": "Created Session Id",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "recording_link",
+          "recording_type",
+          "user_id",
+          "created_session_id"
+        ],
+        "title": "Recording",
+        "description": "Pydantic model for recordings table."
+      },
+      "RecordingCreate": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id",
+            "description": "text"
+          },
+          "recording_link": {
+            "type": "string",
+            "title": "Recording Link",
+            "description": "text"
+          },
+          "recording_type": {
+            "type": "string",
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "created_session_id": {
+            "type": "string",
+            "title": "Created Session Id",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "recording_link",
+          "recording_type",
+          "user_id",
+          "created_session_id"
+        ],
+        "title": "RecordingCreate",
+        "description": "Schema for creating a new recordings record."
+      },
+      "RecordingUpdate": {
+        "properties": {
+          "recording_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Id",
+            "description": "text"
+          },
+          "recording_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Link",
+            "description": "text"
+          },
+          "recording_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Type",
+            "description": "text"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "text"
+          },
+          "created_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created Session Id",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "title": "RecordingUpdate",
+        "description": "Schema for updating an existing recordings record."
+      },
+      "Session": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "text"
+          },
+          "ts_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts Start",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "exercises_data": {
+            "type": "object",
+            "title": "Exercises Data",
+            "description": "jsonb"
+          },
+          "device_type": {
+            "type": "string",
+            "title": "Device Type",
+            "description": "text"
+          },
+          "device_os": {
+            "type": "string",
+            "title": "Device Os",
+            "description": "text"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region",
+            "description": "text"
+          },
+          "ip": {
+            "type": "string",
+            "title": "Ip",
+            "description": "text"
+          },
+          "app_version": {
+            "type": "string",
+            "title": "App Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "ts_start",
+          "user_id",
+          "exercises_data",
+          "device_type",
+          "device_os",
+          "region",
+          "ip",
+          "app_version"
+        ],
+        "title": "Session",
+        "description": "Pydantic model for sessions table."
+      },
+      "SessionCreate": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "text"
+          },
+          "ts_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ts Start",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "exercises_data": {
+            "type": "object",
+            "title": "Exercises Data",
+            "description": "jsonb"
+          },
+          "device_type": {
+            "type": "string",
+            "title": "Device Type",
+            "description": "text"
+          },
+          "device_os": {
+            "type": "string",
+            "title": "Device Os",
+            "description": "text"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region",
+            "description": "text"
+          },
+          "ip": {
+            "type": "string",
+            "title": "Ip",
+            "description": "text"
+          },
+          "app_version": {
+            "type": "string",
+            "title": "App Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "ts_start",
+          "user_id",
+          "exercises_data",
+          "device_type",
+          "device_os",
+          "region",
+          "ip",
+          "app_version"
+        ],
+        "title": "SessionCreate",
+        "description": "Schema for creating a new sessions record."
+      },
+      "SessionUpdate": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "text"
+          },
+          "ts_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ts Start",
+            "description": "timestamp with time zone"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "text"
+          },
+          "exercises_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exercises Data",
+            "description": "jsonb"
+          },
+          "device_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Type",
+            "description": "text"
+          },
+          "device_os": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Os",
+            "description": "text"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "text"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip",
+            "description": "text"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version",
+            "description": "text"
+          }
+        },
+        "type": "object",
+        "title": "SessionUpdate",
+        "description": "Schema for updating an existing sessions record."
+      },
+      "User": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "firebase_data": {
+            "type": "object",
+            "title": "Firebase Data",
+            "description": "jsonb"
+          },
+          "body_data": {
+            "type": "object",
+            "title": "Body Data",
+            "description": "jsonb"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "timestamp with time zone"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "timestamp with time zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "firebase_data",
+          "body_data"
+        ],
+        "title": "User",
+        "description": "Pydantic model for users table."
+      },
+      "UserCreate": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "text"
+          },
+          "firebase_data": {
+            "type": "object",
+            "title": "Firebase Data",
+            "description": "jsonb"
+          },
+          "body_data": {
+            "type": "object",
+            "title": "Body Data",
+            "description": "jsonb"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "firebase_data",
+          "body_data"
+        ],
+        "title": "UserCreate",
+        "description": "Schema for creating a new users record."
+      },
+      "UserUpdate": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "text"
+          },
+          "firebase_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firebase Data",
+            "description": "jsonb"
+          },
+          "body_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Data",
+            "description": "jsonb"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate",
+        "description": "Schema for updating an existing users record."
+      },
+      "src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__1": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/User"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response model."
+      },
+      "src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__2": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Recording"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response model."
+      },
+      "src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__3": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response model."
+      },
+      "src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__4": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Algo"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response model."
+      },
+      "src__api__utils__crud_router__create_crud_router___locals___PaginatedResponse__5": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EventLog"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PaginatedResponse",
+        "description": "Paginated response model."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "users",
+      "description": "Operations with users table"
+    },
+    {
+      "name": "recordings",
+      "description": "Operations with recordings table"
+    },
+    {
+      "name": "sessions",
+      "description": "Operations with sessions table"
+    },
+    {
+      "name": "algos",
+      "description": "Operations with algorithms table"
+    },
+    {
+      "name": "events",
+      "description": "Operations with event logs table"
+    },
+    {
+      "name": "health",
+      "description": "Health check endpoints"
+    }
+  ]
+}
