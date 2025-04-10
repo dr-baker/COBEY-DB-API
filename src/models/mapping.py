@@ -30,12 +30,13 @@ def get_model_class(table_name: str) -> Type[BaseModel]:
         ValueError: If no model is found for the table name
     """
     model_name = get_model_name(table_name)
-    module_name = table_name.replace("_", "")  # Convert event_log to eventlog
+    # Use table_name directly as it matches the module filename convention (e.g., event_log -> event_log.py)
+    module_name_for_import = table_name 
     try:
-        module = importlib.import_module(f"src.models.{module_name}")
+        module = importlib.import_module(f"src.models.{module_name_for_import}")
         return getattr(module, model_name)
     except (ImportError, AttributeError) as e:
-        raise ValueError(f"Failed to import model {model_name} from {module_name}: {str(e)}")
+        raise ValueError(f"Failed to import model {model_name} from {module_name_for_import}: {str(e)}")
 
 def get_model_name(table_name: str) -> str:
     """Get the model name for a given table name.

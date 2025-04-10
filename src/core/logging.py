@@ -47,67 +47,34 @@ def format_error_message(_, __, event_dict):
     return event_dict
 
 class MultiLineConsoleRenderer(structlog.dev.ConsoleRenderer):
-    """Renders logs with structured data indented on a new line."""
+    """Renders logs with structured data indented with two tabs."""
 
     def __call__(self, logger, name, event_dict):
         # Let the base ConsoleRenderer format the log entry with colors
         rendered_line = super().__call__(logger, name, event_dict.copy())
 
-        # Find the end of the level marker (e.g., '] ' after '[info ]')
-        level = event_dict.get('level', '')
-        level_marker_end = f"[{level}"
-        try:
-            idx1 = rendered_line.index(level_marker_end)
-            idx2 = rendered_line.find(']', idx1) + 1
-            # Look for the space immediately after the bracket
-            if idx2 > 0 and idx2 < len(rendered_line) and rendered_line[idx2] == ' ':
-                start_of_event_idx = idx2 + 1
-            else:
-                 # If no space, the event starts right after ']' (less common)
-                 start_of_event_idx = idx2 
-
-            # Heuristic: Find the start of the key=value pairs.
-            # Assume they start after the event message + padding.
-            # Find the first '=' significantly after the start of the event.
-            # This relies on the event message not containing '= ' unlikely sequence.
-            first_kv_idx = -1
-            search_start = start_of_event_idx + self._pad_event # Start search after padding
-            if search_start < len(rendered_line):
-                 # Search for pattern ' key=' to be more specific
-                 first_kv_idx = rendered_line.find(' =', search_start)
-                 if first_kv_idx != -1: 
-                     # Go back to find the start of the key
-                     while first_kv_idx > 0 and rendered_line[first_kv_idx-1] != ' ':
-                        first_kv_idx -= 1
-                 else: 
-                    # Fallback: Find first '=' after padding
-                    first_kv_idx = rendered_line.find('=', search_start)
-            
-            # If we found a likely start for key-value pairs
-            if first_kv_idx != -1 and first_kv_idx > start_of_event_idx:
-                main_part = rendered_line[:first_kv_idx].rstrip()
-                kv_part = rendered_line[first_kv_idx:]
+        # If the line contains structured data (key=value pairs), format it
+        if '=' in rendered_line:
+            try:
+                # Find the first key=value pair
+                first_kv_idx = rendered_line.find('=')
                 
-                # Check if the value part contains newlines
-                if '\n' in kv_part:
-                    # Split by newlines and indent each line
-                    lines = kv_part.split('\n')
-                    indented_lines = [lines[0]]  # First line (with the key=)
-                    for line in lines[1:]:
-                        if line.strip():  # Only add non-empty lines
-                            indented_lines.append(f"    {line}")
-                    
-                    # Join the lines back together
-                    kv_part = '\n'.join(indented_lines)
+                # Find the start of the key
+                key_start = first_kv_idx
+                while key_start > 0 and rendered_line[key_start-1] != ' ':
+                    key_start -= 1
                 
-                indent = "    "  # 4 spaces
-                return f"{main_part}\n{indent}{kv_part}"
-
-        except ValueError:
-            # If parsing fails (e.g., level marker not found), return original
-            pass
-
-        # Default return if splitting logic fails
+                # Split into message and structured data
+                message_part = rendered_line[:key_start].rstrip()
+                kv_part = rendered_line[key_start:]
+                
+                # Combine message and formatted structured data with two tabs
+                return f"{message_part}\t{kv_part}"
+                
+            except Exception:
+                # If formatting fails, return the original line
+                return rendered_line
+        
         return rendered_line
 
 def setup_logging() -> None:
@@ -134,8 +101,9 @@ def setup_logging() -> None:
         stream=sys.stdout
     )
     
-    # Filter out verbose SSH tunnel logging
+    # Filter out verbose logging from specific libraries
     logging.getLogger('paramiko').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
     
     # Configure structlog with our settings
     processors = [
@@ -147,27 +115,14 @@ def setup_logging() -> None:
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
         structlog.processors.dict_tracebacks,
-        # Removed format_json_on_new_line
     ]
     
-    # Use pretty printing in development mode
-    if settings.DEBUG:
-        # Use the new MultiLineConsoleRenderer
-        processors.append(MultiLineConsoleRenderer(
-            colors=True,
-            exception_formatter=structlog.dev.plain_traceback,
-            pad_event=20, # Ensure this matches the renderer's logic
-            force_colors=True
-        ))
-    else:
-        processors.append(structlog.processors.JSONRenderer(
-            serializer=lambda obj, **kwargs: json.dumps(
-                obj,
-                indent=2,
-                default=str,
-                ensure_ascii=False
-            )
-        ))
+    # Always use the MultiLineConsoleRenderer
+    processors.append(MultiLineConsoleRenderer(
+        colors=True,
+        exception_formatter=structlog.dev.plain_traceback,
+        force_colors=True
+    ))
     
     structlog.configure(
         processors=processors,

@@ -11,8 +11,40 @@ logger = get_logger(__name__)
 
 app = FastAPI(
     title="Backend API",
-    description="FastAPI backend service with PostgreSQL database access",
+    description="""
+    FastAPI backend service for PostgreSQL database access.
+    """,
     version="0.1.0",
+    contact={
+        "name": "API Support",
+        "email": "support@example.com",
+    },
+    openapi_tags=[
+        {
+            "name": "users",
+            "description": "Operations with users table",
+        },
+        {
+            "name": "recordings",
+            "description": "Operations with recordings table",
+        },
+        {
+            "name": "sessions",
+            "description": "Operations with sessions table",
+        },
+        {
+            "name": "algos",
+            "description": "Operations with algorithms table",
+        },
+        {
+            "name": "events",
+            "description": "Operations with event logs table",
+        },
+        {
+            "name": "health",
+            "description": "Health check endpoints",
+        },
+    ],
 )
 
 # Register routers

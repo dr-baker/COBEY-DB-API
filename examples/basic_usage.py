@@ -155,111 +155,145 @@ async def ensure_user_exists(user_id, firebase_data, body_data):
         return False
 
 def example_api_usage():
-    """Demonstrate API usage - Use serialize_for_json for request bodies."""
+    """Demonstrate API usage with our endpoints using explicit Pydantic models.
+    
+    This example demonstrates:
+    1. User management (create, update, get)
+    2. Recording management (create, list with filters)
+    3. Algorithm management (create)
+    4. Event logging (create)
+    5. Error handling and logging
+    6. Response structure handling
+    """
     logger = get_logger("example")
     
-    # Example 1: Create a user via API
-    user_create = UserCreate(
-        user_id="test_user_2",
-        firebase_data={"email": "test2@example.com"},
-        body_data={"height": 175, "weight": 70}
-    )
-    response = requests.post(
-        f"{BASE_URL}/users/", 
-        json=serialize_for_json(user_create) # Correct for requests
-    )
-    if response.status_code == 201:
-        user = User(**response.json())
-        logger.info("user_created_via_api", user_id=user.user_id)
-    elif response.status_code == 400 and "duplicate key" in response.text:
-        logger.warning("user_already_exists_via_api", user_id=user_create.user_id)
-    else:
-        logger.error("failed_to_create_user", error=response.text)
+    # Example 1: User Management
+    user_id = "test_user_2"
+    user_data = {
+        "user_id": user_id,
+        "firebase_data": {"email": "test2@example.com"},
+        "body_data": {"height": 175, "weight": 70}
+    }
     
-    # Example 2: Get user details
-    response = requests.get(f"{BASE_URL}/users/{user_create.user_id}")
+    # 1a. Check if user exists
+    response = requests.get(f"{BASE_URL}/users/{user_id}")
     if response.status_code == 200:
-        user = User(**response.json())
+        # 1b. User exists, update it with PUT (complete replacement)
+        user_create = UserCreate(**user_data)
+        response = requests.put(
+            f"{BASE_URL}/users/{user_id}",
+            json=user_create.model_dump()
+        )
+        if response.status_code == 200:
+            user_data = response.json()["data"]
+            user = User(**user_data)
+            logger.info("user_updated", user_id=user.user_id)
+        else:
+            logger.error("failed_to_update_user", error=response.text)
+    else:
+        # 1c. User doesn't exist, create it
+        user_create = UserCreate(**user_data)
+        response = requests.post(
+            f"{BASE_URL}/users/",
+            json=user_create.model_dump()
+        )
+        if response.status_code == 201:
+            user_data = response.json()["data"]
+            user = User(**user_data)
+            logger.info("user_created_via_api", user_id=user.user_id)
+        else:
+            logger.error("failed_to_create_user", error=response.text)
+    
+    # 1d. Get user details
+    response = requests.get(f"{BASE_URL}/users/{user_id}")
+    if response.status_code == 200:
+        user_data = response.json()["data"]
+        user = User(**user_data)
         logger.info("user_retrieved", user_id=user.user_id)
     else:
         logger.error("failed_to_get_user", error=response.text)
     
-    # Example 3: Create a recording via API
+    # Create a recording
     recording_create = RecordingCreate(
         recording_id=f"test_recording_{uuid.uuid4()}",
         recording_link="https://example.com/recording.mp4",
         recording_type="video",
-        user_id=user_create.user_id,
-        created_session_id="test_session_2"
+        user_id=user_id,
+        created_session_id="test_session_1"
+    )
+    
+    response = requests.post(
+        f"{BASE_URL}/recordings/",
+        json=recording_create.model_dump()
+    )
+    response.raise_for_status()
+    recording = Recording(**response.json()["data"])
+    logger.info("recording_created", 
+                recording_id=recording.recording_id,
+                recording_type=recording.recording_type,
+                user_id=recording.user_id)
+    
+    # List recordings with simple filters
+    response = requests.get(
+        f"{BASE_URL}/recordings/",
+        params={
+            "page": 1,
+            "size": 10,
+            "user_id": user_id,
+            "recording_type": "video"
+        }
+    )
+    response.raise_for_status()
+    recordings = [Recording(**item) for item in response.json()["data"]["items"]]
+    logger.info("recordings_listed", 
+                count=len(recordings),
+                user_id=user_id,
+                recording_type="video")
+    
+    # Example 3: Algorithm Management
+    # 3a. Create an algorithm
+    algo_create = AlgoCreate(
+        algo_id=f"test_algo_{uuid.uuid4()}",  # Make ID unique
+        recording_type="video",
+        user_id=user_id,
+        created_session_id="test_session_2",
+        location="us-west-2",  # Required field
+        version="1.0.0"  # Required field
     )
     response = requests.post(
-        f"{BASE_URL}/recordings/", 
-        json=serialize_for_json(recording_create) # Correct for requests
+        f"{BASE_URL}/algos/",
+        json=algo_create.model_dump()
     )
     if response.status_code == 201:
-        recording = Recording(**response.json())
-        logger.info("recording_created", recording_id=recording.recording_id)
+        algo_data = response.json()["data"]
+        algo = Algo(**algo_data)
+        logger.info("algo_created", algo_id=algo.algo_id)
     else:
-        logger.error("failed_to_create_recording", error=response.text)
+        logger.error("failed_to_create_algo", error=response.text)
     
-    # Example 4: Get recordings
-    response = requests.get(f"{BASE_URL}/recordings/")
-    if response.status_code == 200:
-        recordings = [Recording(**rec) for rec in response.json()]
-        logger.info("recordings_retrieved", count=len(recordings))
-    else:
-        logger.error("failed_to_get_recordings", error=response.text)
-    
-    # Example 5: Create a session via API
-    session_create = SessionCreate(
-        session_id=f"test_session_{uuid.uuid4()}",
-        user_id=user_create.user_id,
-        ts_start=datetime.now(timezone.utc),
-        exercises_data={"workout_type": "strength", "duration": 3600},
-        device_type="iphone",
-        device_os="ios16",
-        region="us-west",
-        ip="127.0.0.1",
-        app_version="1.0.0"
-    )
-    response = requests.post(
-        f"{BASE_URL}/sessions/", 
-        json=serialize_for_json(session_create)
-    )
-    if response.status_code == 201:
-        session = Session(**response.json())
-        logger.info("session_created", session_id=session.session_id)
-    else:
-        logger.error("failed_to_create_session", error=response.text)
-    
-    # Example 6: Log an event via API
-    event_create = EventLogCreate(
-        ts=datetime.now(timezone.utc),
-        user_id=user_create.user_id,
-        session_id=session_create.session_id,
-        event_type="workout_started",
-        event_data={"workout_id": "w1"},
-        event_source="mobile_app",
-        log_level="info",
-        app_version="1.0.0"
-    )
-    response = requests.post(
-        f"{BASE_URL}/events/", 
-        json=serialize_for_json(event_create)
-    )
-    if response.status_code == 201:
-        event = EventLog(**response.json())
-        logger.info("event_logged", event_id=event.event_id)
-    else:
-        logger.error("failed_to_log_event", error=response.text)
-    
-    # Example 7: Get events
-    response = requests.get(f"{BASE_URL}/events/")
-    if response.status_code == 200:
-        events = [EventLog(**evt) for evt in response.json()]
-        logger.info("events_retrieved", count=len(events))
-    else:
-        logger.error("failed_to_get_events", error=response.text)
+    # Example 4: Event Logging
+    # 4a. Create an event
+    # event_create = EventLogCreate(
+    #     # event_id is auto-generated by the database
+    #     ts=datetime.now(timezone.utc),
+    #     user_id=user_id,
+    #     session_id="test_session_2",
+    #     event_type="workout_started",
+    #     event_data={"workout_id": "w1"},
+    #     event_source="mobile_app",
+    #     log_level="info",
+    #     app_version="1.0.0"
+    # )
+    # response = requests.post(
+    #     f"{BASE_URL}/events/",
+    #     json=event_create.model_dump(mode='json')
+    # )
+    # if response.status_code == 201:
+    #     event_data = response.json()["data"]
+    #     event = EventLog(**event_data)
+    #     logger.info("event_created", event_id=event.event_id)
+    # else:
+    #     logger.error("failed_to_create_event", error=response.text)
 
 async def main():
     """Run the example."""
