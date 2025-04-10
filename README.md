@@ -1,448 +1,183 @@
-# Backend API
+# Backend API Service
 
-A FastAPI-based backend service that provides a RESTful API for managing user data, recordings, algorithms, and event logs.
+This repository contains the backend service for our cloud platform. It provides a RESTful API for managing user data, recordings, algorithms, and event logs.
 
-## Features
+## For API Users
 
-- Explicit Pydantic models for request/response validation 
-- CRUD operations for all database tables
-- Pagination and filtering support
-- Comprehensive API documentation
-- Logging and error handling
-- Well-structured code with clean separation of concerns
+The API documentation is available at:
+- `docs/api.html`
 
-## Installation
+## Backend Info
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd backendapi
-```
+### Architecture Overview
 
-2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. Run database migrations:
-```bash
-alembic upgrade head
-```
-
-## Usage
-
-### Starting the Server
-
-```bash
-uvicorn src.main:app --reload
-```
-
-The API will be available at `http://localhost:8000`. You can access the interactive API documentation at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-### API Documentation
-
-#### Users API
-
-The Users API provides endpoints for managing user data.
-
-##### Endpoints
-
-1. **Get User**
-   ```http
-   GET /users/{user_id}
-   ```
-   Retrieves a specific user by their unique identifier.
-   - **Parameters**:
-     - `user_id` (path): Unique identifier of the user
-   - **Response**: User object with all fields
-
-2. **List Users**
-   ```http
-   GET /users
-   ```
-   Retrieves a paginated list of users.
-   - **Query Parameters**:
-     - `page` (int, default=1): Page number
-     - `size` (int, default=10, max=100): Items per page
-   - **Response**: List of user objects
-
-3. **Create User**
-   ```http
-   POST /users
-   ```
-   Creates a new user.
-   - **Request Body**:
-     ```json
-     {
-       "user_id": "string",
-       "firebase_data": {
-         "email": "string",
-         "display_name": "string"
-       },
-       "body_data": {
-         "height": "number",
-         "weight": "number"
-       }
-     }
-     ```
-   - **Response**: Created user object
-
-4. **Update User**
-   ```http
-   PUT /users/{user_id}
-   ```
-   Updates an existing user's information.
-   - **Parameters**:
-     - `user_id` (path): Unique identifier of the user
-   - **Request Body**: Same as Create User
-   - **Response**: Updated user object
-
-5. **Delete User**
-   ```http
-   DELETE /users/{user_id}
-   ```
-   Deletes a user by their unique identifier.
-   - **Parameters**:
-     - `user_id` (path): Unique identifier of the user
-   - **Response**: 204 No Content
-
-#### Recordings API
-
-The Recordings API provides endpoints for managing user recordings.
-
-##### Endpoints
-
-1. **Get Recording**
-   ```http
-   GET /recordings/{recording_id}
-   ```
-   Retrieves a specific recording by its unique identifier.
-   - **Parameters**:
-     - `recording_id` (path): Unique identifier of the recording
-   - **Response**: Recording object with all fields
-
-2. **List Recordings**
-   ```http
-   GET /recordings
-   ```
-   Retrieves a paginated list of recordings with optional filtering.
-   - **Query Parameters**:
-     - `user_id` (string, optional): Filter by user ID
-     - `recording_type` (string, optional): Filter by recording type
-     - `page` (int, default=1): Page number
-     - `size` (int, default=10, max=100): Items per page
-   - **Response**: List of recording objects
-
-3. **Create Recording**
-   ```http
-   POST /recordings
-   ```
-   Creates a new recording.
-   - **Request Body**:
-     ```json
-     {
-       "recording_id": "string",
-       "recording_link": "string",
-       "recording_type": "string",
-       "user_id": "string",
-       "created_session_id": "string"
-     }
-     ```
-   - **Response**: Created recording object
-
-4. **Update Recording**
-   ```http
-   PUT /recordings/{recording_id}
-   ```
-   Updates an existing recording's information.
-   - **Parameters**:
-     - `recording_id` (path): Unique identifier of the recording
-   - **Request Body**: Same as Create Recording
-   - **Response**: Updated recording object
-
-5. **Delete Recording**
-   ```http
-   DELETE /recordings/{recording_id}
-   ```
-   Deletes a recording by its unique identifier.
-   - **Parameters**:
-     - `recording_id` (path): Unique identifier of the recording
-   - **Response**: 204 No Content
-
-#### Algorithms API
-
-The Algorithms API provides endpoints for managing algorithm metadata.
-
-##### Endpoints
-
-1. **Get Algorithm**
-   ```http
-   GET /algos/{algo_id}
-   ```
-   Retrieves a specific algorithm by its unique identifier.
-   - **Parameters**:
-     - `algo_id` (path): Unique identifier of the algorithm
-   - **Response**: Algorithm object with all fields
-
-2. **List Algorithms**
-   ```http
-   GET /algos
-   ```
-   Retrieves a paginated list of algorithms with optional filtering.
-   - **Query Parameters**:
-     - `recording_type` (string, optional): Filter by recording type
-     - `version` (string, optional): Filter by version
-     - `page` (int, default=1): Page number
-     - `size` (int, default=10, max=100): Items per page
-   - **Response**: List of algorithm objects
-
-3. **Create Algorithm**
-   ```http
-   POST /algos
-   ```
-   Creates a new algorithm.
-   - **Request Body**:
-     ```json
-     {
-       "algo_id": "string",
-       "recording_type": "string",
-       "location": "string",
-       "version": "string"
-     }
-     ```
-   - **Response**: Created algorithm object
-
-4. **Update Algorithm**
-   ```http
-   PUT /algos/{algo_id}
-   ```
-   Updates an existing algorithm's information.
-   - **Parameters**:
-     - `algo_id` (path): Unique identifier of the algorithm
-   - **Request Body**: Same as Create Algorithm
-   - **Response**: Updated algorithm object
-
-5. **Delete Algorithm**
-   ```http
-   DELETE /algos/{algo_id}
-   ```
-   Deletes an algorithm by its unique identifier.
-   - **Parameters**:
-     - `algo_id` (path): Unique identifier of the algorithm
-   - **Response**: 204 No Content
-
-#### Event Log API
-
-The Event Log API provides endpoints for managing event logs.
-
-##### Endpoints
-
-1. **Get Event**
-   ```http
-   GET /events/{event_id}
-   ```
-   Retrieves a specific event log entry by its unique identifier.
-   - **Parameters**:
-     - `event_id` (path): Unique identifier of the event
-   - **Response**: Event log object with all fields
-
-2. **List Events**
-   ```http
-   GET /events
-   ```
-   Retrieves a paginated list of event logs with optional filtering.
-   - **Query Parameters**:
-     - `user_id` (string, optional): Filter by user ID
-     - `session_id` (string, optional): Filter by session ID
-     - `event_type` (string, optional): Filter by event type
-     - `event_source` (string, optional): Filter by event source
-     - `ts_gte` (datetime, optional): Filter by timestamp greater than or equal to
-     - `ts_lte` (datetime, optional): Filter by timestamp less than or equal to
-     - `page` (int, default=1): Page number
-     - `size` (int, default=10, max=100): Items per page
-   - **Response**: List of event log objects
-
-3. **Create Event**
-   ```http
-   POST /events
-   ```
-   Creates a new event log entry.
-   - **Request Body**:
-     ```json
-     {
-       "user_id": "string",
-       "session_id": "string",
-       "event_type": "string",
-       "event_data": {},
-       "event_source": "string",
-       "log_level": "string",
-       "ts": "datetime"
-     }
-     ```
-   - **Response**: Created event log object
-
-4. **Update Event**
-   ```http
-   PUT /events/{event_id}
-   ```
-   Updates an existing event log entry's information.
-   - **Parameters**:
-     - `event_id` (path): Unique identifier of the event
-   - **Request Body**: Same as Create Event
-   - **Response**: Updated event log object
-
-5. **Delete Event**
-   ```http
-   DELETE /events/{event_id}
-   ```
-   Deletes an event log entry by its unique identifier.
-   - **Parameters**:
-     - `event_id` (path): Unique identifier of the event
-   - **Response**: 204 No Content
-
-### Error Responses
-
-All endpoints may return the following error responses:
-
-1. **400 Bad Request**
-   ```json
-   {
-     "detail": "Error message describing the validation error"
-   }
-   ```
-
-2. **404 Not Found**
-   ```json
-   {
-     "detail": "Resource not found"
-   }
-   ```
-
-3. **500 Internal Server Error**
-   ```json
-   {
-     "detail": "Internal server error message"
-   }
-   ```
-
-## Development
-
-### Project Structure
+The service is built using FastAPI and follows a clean, modular architecture:
 
 ```
 backendapi/
 ├── src/
-│   ├── api/
-│   │   ├── dependencies.py
-│   │   └── routes/
-│   │       ├── health.py
-│   │       └── crud_routes.py
-│   ├── core/
-│   │   ├── config.py
-│   │   └── logging.py
-│   ├── db/
-│   │   ├── connection.py
-│   │   ├── introspection.py
-│   │   └── queries/
-│   │       ├── builder.py
-│   │       └── executor.py
-│   └── models/
-│       ├── users.py
-│       ├── recordings.py
-│       ├── sessions.py
-│       ├── algos.py
-│       └── event_log.py
-├── scripts/
-│   ├── migrate.py
-│   ├── reset_and_migrate.py
-│   └── generate_models.py
-├── examples/
-│   └── basic_usage.py
-├── tests/
-├── .env.example
-├── alembic.ini
-├── main.py
-└── requirements.txt
+│   ├── api/                 # API layer
+│   │   ├── dependencies.py  # Shared dependencies and utilities
+│   │   └── routes/         # API route definitions
+│   ├── core/               # Core application logic
+│   │   ├── config.py       # Configuration management
+│   │   └── logging.py      # Logging configuration
+│   ├── db/                 # Database layer
+│   │   ├── connection.py   # Database connection management + SSH
+│   │   ├── introspection.py # Database schema introspection 
+│   │   ├── migrations/     # Database migration system
+│   │   │   ├── manager.py  # Migration manager
+│   │   │   └── versions/   # Migration SQL files
+│   │   └── queries/        # Query builders and executors
+│   └── models/             
+│       ├── users.py        
+│       ├── recordings.py   
+│       ├── sessions.py     
+│       ├── algos.py        
+│       └── event_log.py    
+├── scripts/               # Utility scripts
+├── examples/              # Example usage
+└── tests/                 # Test suite (TODO)
 ```
 
-### Model Generation
+### Key Components
 
-The project uses explicit Pydantic models to represent database tables. If your database schema changes, you can regenerate the models using:
+1. **API Layer (`src/api/`)**
+   - Handles HTTP request/response cycle
+   - Route definitions and request validation
+   - Authentication and authorization
+   - Error handling and response formatting
 
+2. **Core Layer (`src/core/`)**
+   - Application configuration
+   - Logging setup
+   - Common utilities
+   - Environment-specific settings
+
+3. **Database Layer (`src/db/`)**
+   - Database connection management
+   - Query building and execution
+   - Schema introspection
+   - Custom migration system
+   - Transaction management
+
+4. **Models Layer (`src/models/`)**
+   - Pydantic models for request/response validation
+   - Database model definitions
+   - Data transformation logic
+
+### Quickstart
+
+1. **Clone the repository**:
 ```bash
-python -m scripts.generate_models
+git clone <internal-repo-url>
+cd backendapi
 ```
 
-This will introspect your database schema and create appropriate Pydantic models in the `src/models` directory.
-
-### Running Tests
-
+2. **Set up the development environment**:
 ```bash
-pytest
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### Database Migrations
-
-Create a new migration:
+3. **Configure environment variables**:
 ```bash
-alembic revision --autogenerate -m "description"
+cp .env.example .env
+# Edit .env with your development configuration
 ```
 
-Apply migrations:
+4. **Run database migrations**:
 ```bash
-alembic upgrade head
+python -m scripts.migrate
 ```
 
-Rollback migrations:
+5. **Start the development server**:
 ```bash
-alembic downgrade -1
+uvicorn src.main:app --reload
 ```
 
-### Working with the CRUD Router
+### Development Workflow
 
-The API uses a standardized CRUD router factory that generates consistent endpoints for each table. To add a new table to the API:
+1. **Adding New Features**
+   - Create a new branch from `main`
+   - Implement your changes following the existing architecture
+   - Add tests for new functionality
+   - Update documentation as needed
+   - Submit a pull request
 
-1. Generate models for your table with `python -m scripts.generate_models`
-2. Update the MODEL_MAP in `src/api/dependencies.py` to include your new model
-3. Add a router in `src/api/routes/crud_routes.py`:
+2. **Database Changes**
+   - Create a new migration file in `src/db/migrations/versions/`
+     - Name format: `###_description.sql` (e.g., `001_create_users.sql`)
+     - Write SQL for schema changes
+   - Apply migrations:
+     ```bash
+     python -m scripts.migrate
+     ```
+   - Reset database and apply all migrations:
+     ```bash
+     python -m scripts.migrate --reset
+     ```
+   - Generate updated models:
+     ```bash
+     python -m scripts.generate_models
+     ```
 
-```python
-your_table_router = create_crud_router(
-    table_name="your_table_name",
-    prefix="/your-endpoint",
-    tags=["your-tag"],
-    auto_timestamps=True
-)
-```
+3. **Testing**
+   - Run the test suite:
+     ```bash
+     pytest
+     ```
+   - Run specific test files:
+     ```bash
+     pytest tests/path/to/test_file.py
+     ```
 
-4. Register the new router in `src/main.py`:
+### Getting Started with the Codebase
 
-```python
-app.include_router(crud_routes.your_table_router)
-```
+The `examples/basic_usage.py` script provides a comprehensive example of how to interact with the API programmatically. This is the recommended starting point for understanding the codebase.
 
-## Contributing
+### Common Development Tasks
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. **Adding a New Table**
+   - Create a migration file with the CREATE TABLE statement in `src/db/migrations/versions/`
+   - Apply migrations with `python -m scripts.migrate`
+   - Generate models using `python -m scripts.generate_models`
+   - Update `src/api/dependencies.py` with new model mappings
+   - Add routes in `src/api/routes/crud_routes.py`
+   - Register the new router in `src/main.py`
 
-## License
+2. **Modifying Existing Endpoints**
+   - Locate the relevant route in `src/api/routes/`
+   - Update the route handler and validation logic
+   - Update tests to reflect changes
+   - Update documentation if needed
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+3. **Adding New Dependencies**
+   - Add the package to `requirements.txt`
+   - Update the virtual environment:
+     ```bash
+     pip install -r requirements.txt
+     ```
+
+### Utility Scripts
+
+The `scripts/` directory contains several utility scripts to assist with common tasks:
+
+1. **migrate.py**: Handles database migrations, including applying and rolling back changes.
+   ```bash
+   # Apply pending migrations
+   python -m scripts.migrate
+   
+   # Clear migration history and reapply all migrations
+   python -m scripts.migrate --clear
+   
+   # Reset entire database and reapply all migrations
+   python -m scripts.migrate --reset
+   ```
+
+2. **generate_models.py**: Introspects the database schema and generates Pydantic models in the `src/models` directory.
+
+### Troubleshooting
+
+Common issues and their solutions are documented in our internal wiki. For issues not covered there, please contact the backend team lead.
