@@ -4,8 +4,11 @@ This repository contains the backend service for our cloud platform. It provides
 
 ## For API Users
 
-The API documentation is available at:
-- `docs/api.html`
+The API documentation by copying the JSON from:
+- `docs/openapi.json`
+
+And uploading here:
+- [Swagger Editor](https://editor.swagger.io/)
 
 ## Backend Info
 
