@@ -21,8 +21,27 @@ logger = get_logger(__name__)
 TABLE_NAME_MAP = {
     "User": "users",
     "Recording": "recordings",
-    "EventLog": "event_log",
-    "Algo": "algos"
+    "Session": "sessions",
+    "Algo": "algos",
+    "EventLog": "event_log"
+}
+
+# Define primary key field for each table
+PK_FIELD_MAP = {
+    "users": "user_id",
+    "recordings": "recording_id",
+    "sessions": "session_id",
+    "algos": "algo_id",
+    "event_log": "event_id"
+}
+
+# Define JSON fields for each table
+JSON_FIELDS_MAP = {
+    "users": ["firebase_data", "body_data"],
+    "recordings": ["metadata"],
+    "sessions": ["exercises_data"],
+    "algos": ["parameters"],
+    "event_log": ["event_data"]
 }
 
 class QueryExecutor:
@@ -45,19 +64,24 @@ class QueryExecutor:
         if not self.table_name:
             raise ValueError(f"No table mapping found for model: {model_name}")
             
+        # Get primary key field for this table
+        self.pk_field = PK_FIELD_MAP.get(self.table_name, "id")
+        
+        # Get JSON fields for this table
+        self.json_fields = JSON_FIELDS_MAP.get(self.table_name, [])
+            
         logger.debug(f"Using model {model_name} with table {self.table_name}")
     
-    def _process_data_for_db(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process data for DB insertion/update, serializing JSON fields."""
-        processed_data = {}
-        for key, value in data.items():
-            # Serialize dicts and lists to JSON for database storage
-            if isinstance(value, (dict, list)):
-                processed_data[key] = json.dumps(value)
+    def _process_params(self, params: List[Any]) -> List[Any]:
+        """Pre-process parameters for SQL query to handle JSON objects."""
+        processed = []
+        for param in params:
+            if isinstance(param, (dict, list)):
+                processed.append(json.dumps(param))
             else:
-                processed_data[key] = value
-        return processed_data
-
+                processed.append(param)
+        return processed
+        
     async def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
         """
         Count records with optional filtering.
@@ -90,248 +114,117 @@ class QueryExecutor:
             result = await conn.fetchval(query, *params)
             return int(result)
     
-    async def get_by_id(self, record_id: str) -> Optional[Any]:
-        """
-        Get a record by its ID.
+    def _process_row(self, row: asyncpg.Record) -> Dict[str, Any]:
+        """Process a database row, converting JSON strings to dictionaries."""
+        row_dict = dict(row)
         
-        Args:
-            record_id: Primary key value of the record
-            
-        Returns:
-            Pydantic model instance if found, None otherwise
-        """
-        builder = SQLBuilder()
-        builder.SELECT().FROM(self.table_name)
-        # Get PK field name based on table name
-        pk_field = f'{self.table_name[:-1]}_id' if self.table_name.endswith('s') else f'{self.table_name}_id'
-        builder.WHERE(f"{pk_field} = {builder._add_param(record_id)}")
-        builder.LIMIT(1)
+        # Parse JSON fields
+        for field in self.json_fields:
+            if field in row_dict and isinstance(row_dict[field], str):
+                try:
+                    row_dict[field] = json.loads(row_dict[field])
+                except json.JSONDecodeError:
+                    # If it's not valid JSON, leave it as is
+                    pass
+                    
+        return row_dict
         
-        query, params = builder.build()
+    async def get_by_id(self, item_id: str) -> Optional[BaseModel]:
+        """Get a single item by ID."""
+        query = SQLBuilder.select(self.table_name)
+        query.where(f"{self.pk_field} = $1")
         
         async with self.db.transaction() as conn:
-            row = await conn.fetchrow(query, *params)
-            if row:
-                # Convert row to dict and process JSON fields
-                row_dict = dict(row)
-                for key, value in row_dict.items():
-                    # Parse any JSON strings into Python objects
-                    if isinstance(value, str):
-                        try:
-                            json_value = json.loads(value)
-                            if isinstance(json_value, (dict, list)):
-                                row_dict[key] = json_value
-                        except json.JSONDecodeError:
-                            # Not a JSON string, keep original value
-                            pass
-                
-                return self.model(**row_dict)
-            return None
-    
+            row = await conn.fetchrow(query.sql, item_id)
+            if not row:
+                return None
+            return self.model(**self._process_row(row))
+            
     async def list(
         self,
         filters: Optional[Dict[str, Any]] = None,
         page: int = 1,
         size: int = 10
-    ) -> List[Any]:
-        """
-        List records with pagination and filtering.
+    ) -> List[BaseModel]:
+        """List items with optional filtering and pagination."""
+        query = SQLBuilder.select(self.table_name)
         
-        Args:
-            filters: Optional dictionary of field names and values for filtering
-            page: Page number (1-based)
-            size: Page size
+        # Add filters
+        param_index = 1
+        if filters:
+            filter_conditions = []
+            params = []
             
-        Returns:
-            List of Pydantic model instances
-        """
-        try:
-            builder = SQLBuilder()
-            builder.SELECT().FROM(self.table_name)
+            for field, value in filters.items():
+                if value is not None:
+                    filter_conditions.append(f"{field} = ${param_index}")
+                    params.append(value)
+                    param_index += 1
+                    
+            if filter_conditions:
+                # Join conditions with AND
+                query.where(" AND ".join(filter_conditions))
+                query.params = params
+        
+        # Add pagination
+        offset = (page - 1) * size
+        query.limit(size)
+        query.offset(offset)
+        
+        async with self.db.transaction() as conn:
+            rows = await conn.fetch(query.sql, *query.params)
+            return [self.model(**self._process_row(row)) for row in rows]
             
-            where_conditions = []
-            if filters:
-                logger.debug(f"Applying filters: {filters}")
-                for field, value in filters.items():
-                    if value is not None:
-                        condition = f"{field} = {builder._add_param(value)}"
-                        where_conditions.append(condition)
-                        logger.debug(f"Added filter condition: {condition}")
-            
-            if where_conditions:
-                where_clause = " AND ".join(where_conditions)
-                builder.WHERE(where_clause)
-                logger.debug(f"Built WHERE clause: {where_clause}")
+    async def create(self, data: Dict[str, Any]) -> BaseModel:
+        """Create a new item."""
+        # Pre-process data for JSON fields
+        processed_data = {}
+        for key, value in data.items():
+            if key in self.json_fields and isinstance(value, (dict, list)):
+                processed_data[key] = json.dumps(value)
             else:
-                logger.debug("No filters applied.")
-
-            offset = (page - 1) * size
-            builder.LIMIT(size).OFFSET(offset)
-            
-            query, params = builder.build()
-            logger.info(f"Executing final list query for {self.table_name}: {query}")
-            logger.info(f"Final query parameters: {params}")
-            
-            async with self.db.transaction() as conn:
-                rows = await conn.fetch(query, *params)
-                logger.debug(f"Query returned {len(rows)} rows.")
-                result = []
-                for row in rows:
-                    row_dict = dict(row)
-                    # Parse JSON strings
-                    for key, value in row_dict.items():
-                        if isinstance(value, str):
-                            try:
-                                json_value = json.loads(value)
-                                if isinstance(json_value, (dict, list)):
-                                    row_dict[key] = json_value
-                            except json.JSONDecodeError:
-                                # Not JSON, keep original
-                                pass
-                    result.append(self.model(**row_dict))
-                return result
-        except Exception as e:
-            logger.exception(f"Failed to list records from {self.table_name} with filters {filters}. Error type: {type(e).__name__}", exc_info=True)
-            raise
-    
-    async def create(self, data: Dict[str, Any]) -> Any:
-        """
-        Create a new record.
+                processed_data[key] = value
+                
+        query = SQLBuilder.insert(self.table_name, processed_data)
         
-        Args:
-            data: Dictionary of field names and values
+        async with self.db.transaction() as conn:
+            row = await conn.fetchrow(query.sql, *query.params)
+            return self.model(**self._process_row(row))
             
-        Returns:
-            Pydantic model instance of the created record
-            
-        Raises:
-            ValueError: If record creation fails
-            asyncpg.exceptions.UniqueViolationError: If record with same ID already exists
-        """
-        try:
-            # Serialize JSON fields before creating the record
-            data = self._process_data_for_db(data)
-            
-            builder = SQLBuilder()
-            builder.INSERT_INTO(self.table_name, **data)
-            builder.RETURNING()
-            
-            query, params = builder.build()
-            
-            async with self.db.transaction() as conn:
-                try:
-                    row = await conn.fetchrow(query, *params)
-                    if row:
-                        # Deserialize JSON fields before creating model
-                        row_dict = dict(row)
-                        for key, value in row_dict.items():
-                            if isinstance(value, str):
-                                try:
-                                    json_value = json.loads(value)
-                                    if isinstance(json_value, (dict, list)):
-                                        row_dict[key] = json_value
-                                except json.JSONDecodeError:
-                                    # Not JSON, keep original
-                                    pass
-                        return self.model(**row_dict)
-                    raise ValueError("Failed to create record")
-                except asyncpg.exceptions.UniqueViolationError as e:
-                    logger.warning(f"Record already exists in {self.table_name}", error=str(e))
-                    # Re-raise the unique violation error to be handled by the API layer
-                    raise
-                except Exception as e:
-                    logger.error(f"Error creating record in {self.table_name}", error=str(e))
-                    raise
-        except Exception as e:
-            logger.error(f"Failed to create record in {self.table_name}", error=str(e))
-            raise
-    
     async def update(
         self,
-        record_id: str,
+        item_id: str,
         data: Dict[str, Any],
         replace: bool = False
-    ) -> Optional[Any]:
-        """
-        Update a record by ID.
-        
-        Args:
-            record_id: Primary key value of the record to update
-            data: Dictionary of field names and values to update
-            replace: If True, completely replace the record with the provided data
-            
-        Returns:
-            Updated Pydantic model instance or None if not found
-        """
+    ) -> Optional[BaseModel]:
+        """Update an existing item."""
         if not data and not replace:
-             return await self.get_by_id(record_id)
+            return await self.get_by_id(item_id)
             
-        processed_data = self._process_data_for_db(data)
+        # Pre-process data for JSON fields
+        processed_data = {}
+        for key, value in data.items():
+            if key in self.json_fields and isinstance(value, (dict, list)):
+                processed_data[key] = json.dumps(value)
+            else:
+                processed_data[key] = value
+                
+        query = SQLBuilder.update(self.table_name, processed_data)
+        query.where(f"{self.pk_field} = ${len(query.params) + 1}")
+        query.params.append(item_id)
+        query.returning()
             
-        builder = SQLBuilder()
-        pk_field = f'{self.table_name[:-1]}_id' if self.table_name.endswith('s') else f'{self.table_name}_id'
-
-        if replace:
-            # For replace, we need to include all fields
-            update_payload = processed_data
-        else:
-            # For update, filter out the PK and only include provided fields
-            update_payload = {k: v for k, v in processed_data.items() if k != pk_field}
-
-        if not update_payload and not replace:
-             return await self.get_by_id(record_id) # Nothing to update except maybe PK?
-
-        builder.UPDATE(self.table_name, **update_payload)
-        builder.WHERE(f"{pk_field} = {builder._add_param(record_id)}")
-        builder.RETURNING()
-        
-        query, params = builder.build()
+        async with self.db.transaction() as conn:
+            row = await conn.fetchrow(query.sql, *query.params)
+            if not row:
+                return None
+            return self.model(**self._process_row(row))
+            
+    async def delete(self, item_id: str) -> bool:
+        """Delete an item."""
+        query = SQLBuilder.delete(self.table_name)
+        query.where(f"{self.pk_field} = $1")
         
         async with self.db.transaction() as conn:
-            try:
-                row = await conn.fetchrow(query, *params)
-                if row:
-                    row_dict = dict(row)
-                    # Parse JSON strings
-                    for key, value in row_dict.items():
-                        if isinstance(value, str):
-                            try:
-                                json_value = json.loads(value)
-                                if isinstance(json_value, (dict, list)):
-                                    row_dict[key] = json_value
-                            except json.JSONDecodeError:
-                                # Not JSON, keep original
-                                pass
-                    return self.model(**row_dict)
-                return None  # Record not found
-            except Exception as e:
-                logger.error(f"Error updating record in {self.table_name}", query=query, params=params, error=str(e))
-                raise
-    
-    async def delete(
-        self,
-        record_id: str
-    ) -> bool:
-        """
-        Delete a record by ID.
-        
-        Args:
-            record_id: Primary key value of the record to delete
-            
-        Returns:
-            True if the record was deleted, False if not found
-        """
-        builder = SQLBuilder()
-        builder.query_parts.append(f"DELETE FROM {self.table_name}")
-        pk_field = f'{self.table_name[:-1]}_id' if self.table_name.endswith('s') else f'{self.table_name}_id'
-        builder.WHERE(f"{pk_field} = {builder._add_param(record_id)}")
-        
-        query, params = builder.build()
-        
-        async with self.db.transaction() as conn:
-            try:
-                result = await conn.execute(query, *params)
-                return result.startswith("DELETE") and not result.endswith(" 0")
-            except Exception as e:
-                logger.error(f"Error deleting record from {self.table_name}", query=query, params=params, error=str(e))
-                raise 
+            result = await conn.execute(query.sql, item_id)
+            return result.endswith("1") 
